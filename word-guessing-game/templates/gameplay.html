@@ -1,0 +1,48 @@
+{{define "title"}}Gameplay{{end}}
+
+{{define "content"}}
+<div class="center-box">
+  <h2>Word Guessing Game</h2>
+
+  <p><strong>Word:</strong> {{.DisplayWord}}</p>
+  <p><strong>Remaining Incorrect Guesses:</strong> {{.Remaining}}</p>
+
+  <div class="section">
+    <p><strong>Correct Letters:</strong><br>
+      {{if .Correct}}{{.Correct}}{{else}}<em>None yet</em>{{end}}
+    </p>
+    <p><strong>Wrong Letters:</strong><br>
+      {{if .Wrong}}{{.Wrong}}{{else}}<em>None yet</em>{{end}}
+    </p>
+  </div>
+
+  {{if .GameOver}}
+    <div class="section">
+      <p><strong>Game Over!</strong></p>
+      <p>
+        {{if eq .Winner "Draw"}}
+          It's a draw!
+        {{else}}
+          Winner: {{.Winner}}
+        {{end}}
+      </p>
+      <p><strong>The correct word was:</strong> <code>{{.Word}}</code></p>
+      <a class="button" href="/">Return to Home</a>
+    </div>
+
+  {{else if .IsPlayerTurn}}
+    <form method="POST" action="/guess" class="section">
+      <label for="letter">Guess a letter:</label>
+      <input id="letter" name="letter" maxlength="1" required
+             style="text-transform: lowercase;" autocomplete="off">
+      <button type="submit">Guess</button>
+    </form>
+
+  {{else}}
+    <div class="section">
+      <p>Waiting for opponent’s turn...</p>
+      <div class="loader"></div>
+    </div>
+  {{end}}
+</div>
+{{end}}
