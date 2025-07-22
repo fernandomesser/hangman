@@ -72,7 +72,7 @@ func InitDB() {
 				last_login TIMESTAMP
 			);`,
 			`CREATE TABLE IF NOT EXISTS leaderboard (
-				user_id INTEGER PRIMARY KEY,
+				player INTEGER PRIMARY KEY,
 				wins INTEGER DEFAULT 0,
 				best_score INTEGER DEFAULT 0,
 				games_played INTEGER DEFAULT 0,
