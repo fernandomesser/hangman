@@ -1,0 +1,163 @@
+html, body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+  }
+  
+  body {
+    min-height: 100vh;
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: linear-gradient(135deg, #eef2fa 0%, #e0ecff 100%);
+    color: #222;
+  }
+  
+  main {
+    padding: 2em 1em;
+  }
+  
+  .center-box {
+    max-width: 440px;
+    margin: 4em auto 2em auto;
+    background: rgba(255,255,255,0.97);
+    border-radius: 14px;
+    box-shadow: 0 5px 36px rgba(64,100,199,0.12), 0 1.5px 8px rgba(60,80,130,0.06);
+    padding: 2.5em 2em 2em 2em;
+    transition: box-shadow 0.15s;
+  }
+  
+  h1, h2 {
+    text-align: center;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    margin-bottom: 1.2em;
+  }
+  
+  .section {
+    background: #f7fafc;
+    border-radius: 10px;
+    margin-bottom: 1.8em;
+    padding: 1em 1em 1.4em 1em;
+    box-shadow: 0 0 6px #cfe2ff4d;
+  }
+  
+  label {
+    font-size: 1em;
+    margin-top: 1.1em;
+    margin-bottom: 0.4em;
+    display: block;
+    font-weight: 500;
+  }
+  
+  input[type="text"],
+  input[type="password"],
+  input[type="number"] {
+    width: 100%;
+    padding: 0.65em;
+    font-size: 1.07em;
+    background: #f5f9ff;
+    border: 1px solid #a5bbce;
+    border-radius: 4px;
+    margin-top: 0.3em;
+    margin-bottom: 1.1em;
+    box-sizing: border-box;
+    transition: border-color 0.15s;
+  }
+  
+  input:focus {
+    outline: none;
+    border-color: #4587ed;
+    background: #e7f0fe;
+  }
+  
+  button {
+    width: 100%;
+    margin-top: 1em;
+    padding: 0.9em 0;
+    font-size: 1.1em;
+    background: linear-gradient(90deg, #2876e2 0%, #69d2ff 100%);
+    color: white;
+    border: none;
+    border-radius: 5px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background 0.2s, box-shadow 0.2s;
+    letter-spacing: 0.3px;
+    box-shadow: 0 2px 10px #2876e228;
+  }
+  
+  button:hover, button:focus {
+    background: linear-gradient(90deg, #195fa9 0%, #39b6ed 100%);
+    outline: none;
+  }
+  
+  .nav {
+    text-align: center;
+    margin-bottom: 1.8em;
+    margin-top: 1.2em;
+  }
+  
+  .nav a {
+    color: #246ac8;
+    font-weight: 500;
+    margin: 0 0.55em;
+    text-decoration: none;
+    border-bottom: 1.5px solid transparent;
+    padding-bottom: 2px;
+    transition: border-color 0.18s;
+  }
+  
+  .nav a:hover, .nav a:focus {
+    border-color: #246ac8;
+    color: #184c93;
+  }
+  
+  .error-box {
+    background: #ffeaea;
+    border: 1px solid #d73b3b;
+    color: #a82222;
+    text-align: center;
+    border-radius: 5px;
+    padding: 0.95em 0.75em;
+    margin-bottom: 1.2em;
+    box-shadow: 0 0.5px 7px #d73b3b14;
+  }
+  
+  @media (max-width: 600px) {
+    .center-box {
+      max-width: 98vw;
+      margin: 1.1em 1vw 2em 1vw;
+      padding: 1.2em 1.1em 1.1em 1.1em;
+    }
+    main { padding: 1.5em 0.3em; }
+    h1 { font-size: 1.36em; }
+    h2 { font-size: 1.14em; }
+  }
+  
+  .leaderboard-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 1.5em;
+    box-shadow: 0 0 8px #d9e9ff33;
+  }
+  .leaderboard-table th,
+  .leaderboard-table td {
+    border: 1px solid #bbb;
+    padding: 10px 14px;
+    text-align: center;
+  }
+  .leaderboard-table th {
+    background: #4587ed;
+    color: white;
+    font-weight: 600;
+  }
+  .leaderboard-table tr:nth-child(even) td {
+    background: #f4f8fc;
+  }
+  
+  .error-box {
+  color: #fff;
+  background-color: #d9534f;
+  padding: 10px;
+  border-radius: 8px;
+  margin-bottom: 10px;
+}

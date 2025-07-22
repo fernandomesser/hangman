@@ -1,0 +1,79 @@
+{{define "title"}}Gameplay{{end}}
+
+{{define "content"}}
+<div class="center-box">
+  <h2>Word Guessing Game</h2>
+
+  <p><strong>Word:</strong> {{.DisplayWord}}</p>
+  <p><strong>Remaining Incorrect Guesses:</strong> {{.Remaining}}</p>
+
+  <div class="section">
+    <p><strong>Correct Letters:</strong><br>
+      {{if .Correct}}{{.Correct}}{{else}}<em>None yet</em>{{end}}
+    </p>
+    <p><strong>Wrong Letters:</strong><br>
+      {{if .Wrong}}{{.Wrong}}{{else}}<em>None yet</em>{{end}}
+    </p>
+  </div>
+
+  <div class="section">
+    <p><strong>Hint:</strong></p>
+
+    {{if .HasUsedHint}}
+      <p id="hintOutput">{{.HintText}}</p>
+    {{else}}
+      <button id="hintBtn" onclick="getHint()">Reveal Hint</button>
+      <p id="hintOutput"></p>
+    {{end}}
+  </div>
+
+  {{if .GameOver}}
+    <div class="section">
+      <p><strong>Game Over!</strong></p>
+      <p>
+        {{if eq .Winner "Draw"}}
+          It's a draw!
+        {{else}}
+          Winner: {{.Winner}}
+        {{end}}
+      </p>
+      <p><strong>The correct word was:</strong> <code>{{.Word}}</code></p>
+      <a class="button" href="/">Return to Home</a>
+    </div>
+  {{else if .IsPlayerTurn}}
+    <div class="section">
+      {{if .Error}}
+        <div class="error-box">{{.Error}}</div>
+      {{end}}
+
+      <form method="POST" action="/guess">
+        <label for="letter">Guess a letter:</label>
+        <input id="letter" name="letter" maxlength="1" required
+               style="text-transform: lowercase;" autocomplete="off">
+        <button type="submit">Guess</button>
+      </form>
+    </div>
+  {{else}}
+    <div class="section">
+      <p>Waiting for opponent’s turn...</p>
+      <div class="loader"></div>
+    </div>
+  {{end}}
+
+</div>
+
+<script>
+function getHint() {
+  fetch("/hint")
+    .then(resp => resp.text())
+    .then(txt => {
+      document.getElementById("hintOutput").innerText = txt;
+      const btn = document.getElementById("hintBtn");
+      if (btn) btn.remove();
+    })
+    .catch(() => {
+      document.getElementById("hintOutput").innerText = "Hint unavailable.";
+    });
+}
+</script>
+{{end}}

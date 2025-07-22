@@ -1,0 +1,19 @@
+{{define "title"}}Leaderboard{{end}}
+{{define "content"}}
+<div class="center-box">
+  <h2>Leaderboard (Top 10)</h2>
+  <table class="leaderboard-table">
+    <tr>
+      <th>Player</th><th>Wins</th><th>Best Score</th>
+    </tr>
+    {{range .Entries}}
+    <tr>
+      <td>{{.Player}}</td>
+      <td>{{.Wins}}</td>
+      <td>{{.BestScore}}</td>
+    </tr>
+    {{end}}
+  </table>
+  <div class="nav"><a href="/">Back to Home</a></div>
+</div>
+{{end}}

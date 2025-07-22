@@ -1,0 +1,52 @@
+{{define "title"}}Home{{end}}
+
+{{define "content"}}
+<div class="center-box">
+  <h1>Multiplayer Word Guessing Game</h1>
+
+  {{if .Error}}
+    <div class="error-box">{{.Error}}</div>
+  {{end}}
+
+  {{if .User}}
+
+    <div class="section">
+      <h2>Create Game</h2>
+      <form method="POST" action="/create">
+        <label>Word Length: (3-10)</label>
+        <input type="number" name="word_length" min="3" max="10" required>
+
+        <label>Max Incorrect Guesses:</label>
+        <input type="number" name="max_guesses" min="1" required>
+
+        <button type="submit">Create Game</button>
+      </form>
+    </div>
+
+    <div class="section">
+      <h2>Join Game</h2>
+      <form method="POST" action="/join">
+        <label>Game ID:</label>
+        <input type="text" name="game_id" maxlength="4" required>
+        <button type="submit">Join Game</button>
+      </form>
+    </div>
+
+    <div class="section">
+      <h2>Play vs AI</h2>
+      <form method="POST" action="/create_ai">
+        <label>Word Length: (3-10)</label>
+        <input type="number" name="word_length" min="3" max="10" required>
+        <label>Max Incorrect Guesses:</label>
+        <input type="number" name="max_guesses" min="1" required>
+        <button type="submit">Play vs AI</button>
+      </form>
+    </div>
+
+  {{else}}
+    <div class="section">
+      <p><strong>Please <a href="/login">login</a> or <a href="/register">register</a> to play.</strong></p>
+    </div>
+  {{end}}
+</div>
+{{end}}

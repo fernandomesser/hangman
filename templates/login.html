@@ -1,0 +1,26 @@
+{{define "title"}}Login{{end}}
+
+{{define "content"}}
+<div class="center-box">
+  <h2>Login</h2>
+
+  {{if .Error}}
+    <div class="error-box">{{.Error}}</div>
+  {{end}}
+
+  <form method="POST" action="/login">
+    <label>Username:</label>
+    <input name="username" type="text" required>
+
+    <label>Password:</label>
+    <input name="password" type="password" required>
+
+    <button type="submit">Login</button>
+  </form>
+
+  <div class="nav">
+    <a href="/register">Need an account? Register</a><br>
+    <a href="/">Back to Home</a>
+  </div>
+</div>
+{{end}}

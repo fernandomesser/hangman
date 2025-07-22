@@ -1,0 +1,26 @@
+{{define "base"}}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>{{block "title" .}}Word Game{{end}}</title>
+    <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+    <div class="nav">
+        {{if .User}}
+            Hello, <strong>{{.User}}</strong> |
+            <a href="/logout">Logout</a> |
+        {{else}}
+            <a href="/login">Login</a> |
+            <a href="/register">Register</a> |
+        {{end}}
+        <a href="/leaderboard">Leaderboard</a>
+    </div>
+    
+    <main>
+        {{block "content" .}}{{end}}
+    </main>
+</body>
+</html>
+{{end}}
