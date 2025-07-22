@@ -3,17 +3,10 @@
   "builds": [
     {
       "src": "Dockerfile",
-      "use": "@vercel/docker"
-    }
-  ],
-  "routes": [
-    {
-      "src": "/static/(.*)",
-      "dest": "/static/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/hangman"
+      "use": "@vercel/now-docker",
+      "config": {
+        "maxLambdaSize": "15mb"
+      }
     }
   ]
 }
