@@ -18,12 +18,10 @@ var (
 
 // getDBPath returns the appropriate database path based on environment
 func getDBPath() string {
-	// For Vercel deployments
 	if os.Getenv("VERCEL") == "1" {
-		return "/tmp/hangman.db" // Vercel's writable tmp directory
+		return "/tmp/hangman.db" // Docker container path
 	}
-	// For local development
-	return "./hangman.db"
+	return "./hangman.db" // Local development
 }
 
 func InitDB() {

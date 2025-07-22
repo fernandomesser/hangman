@@ -2,15 +2,8 @@
   "version": 2,
   "builds": [
     {
-      "src": "main.go",
-      "use": "@vercel/go",
-      "config": {
-        "runtime": "go1.x"
-      }
-    },
-    {
-      "src": "static/*",
-      "use": "@vercel/static"
+      "src": "Dockerfile",
+      "use": "@vercel/docker"
     }
   ],
   "routes": [
@@ -20,7 +13,7 @@
     },
     {
       "src": "/(.*)",
-      "dest": "/main"
+      "dest": "/hangman"
     }
   ]
 }

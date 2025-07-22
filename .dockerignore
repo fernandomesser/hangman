@@ -1,0 +1,6 @@
+.git
+.vercel
+*.db
+*.sqlite
+.DS_Store
+bin/
