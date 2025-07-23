@@ -335,25 +335,6 @@ func buildGameState(game *models.Game, role string) map[string]interface{} {
 	}
 }
 
-func StateHandler(w http.ResponseWriter, r *http.Request) {
-	gameIDCookie, err := r.Cookie("game_id")
-	roleCookie, err2 := r.Cookie("role")
-	if err != nil || err2 != nil {
-		http.Error(w, "Missing session cookies", http.StatusBadRequest)
-		return
-	}
-
-	game := games[gameIDCookie.Value]
-	if game == nil {
-		http.Error(w, "Game not found", http.StatusNotFound)
-		return
-	}
-
-	html := generatePartialGameHTML(game, roleCookie.Value)
-	w.Header().Set("Content-Type", "text/html")
-	fmt.Fprint(w, html)
-}
-
 // Replace with your dynamic game UI rendering logic
 func generatePartialGameHTML(game *models.Game, role string) string {
 	// Example: HTML snippet with word and remaining guesses
