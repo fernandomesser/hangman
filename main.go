@@ -67,6 +67,9 @@ func main() {
 	http.HandleFunc("/state", handlers.StateHandler) // HTMX updates
 	http.HandleFunc("/leaderboard", handlers.LeaderboardHandler)
 	http.HandleFunc("/hint", handlers.HintHandler)
+	http.HandleFunc("/ws", handlers.WebSocketHandler)
+
+	handlers.StartWSBroadcaster()
 
 	// Get port from environment (required for Vercel)
 	port := os.Getenv("PORT")

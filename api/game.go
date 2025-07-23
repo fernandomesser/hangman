@@ -16,6 +16,8 @@ import (
 	"wordgame/words"
 )
 
+var wsBroadcast = make(chan WSMessage, 16) // buffered broadcast channel
+
 // In-memory game store
 var games = make(map[string]*models.Game)
 
@@ -263,53 +265,9 @@ func getWrongLetters(game *models.Game) string {
 	return strings.Join(letters, ", ")
 }
 
-// Guess Handler (POST /guess)
 func GuessHandler(w http.ResponseWriter, r *http.Request) {
-	r.ParseForm()
-
-	gameID, err := r.Cookie("game_id")
-	if err != nil {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
-	game := games[gameID.Value]
-	if game == nil || game.Status == "finished" {
-		http.Redirect(w, r, "/", http.StatusSeeOther)
-		return
-	}
-
-	letter := strings.ToLower(strings.TrimSpace(r.FormValue("letter")))
-	if len(letter) != 1 || letter < "a" || letter > "z" {
-		http.Redirect(w, r, "/gameplay", http.StatusSeeOther)
-		return
-	}
-
-	if game.GuessedLetters[letter] {
-		http.SetCookie(w, &http.Cookie{
-			Name:  "error",
-			Value: url.QueryEscape(fmt.Sprintf("Letter '%s' has already been guessed.", letter)),
-			Path:  "/",
-		})
-		http.Redirect(w, r, "/gameplay", http.StatusSeeOther)
-		return
-	}
-
-	// Register the new guess
-	logic.RegisterGuess(game, letter)
-
-	// If it's a game vs AI
-	if game.Status != "finished" && game.Player2 == "Computer" && game.PlayerTurn == 2 {
-		ai := logic.AIGuess(game)
-		logic.RegisterGuess(game, ai)
-	}
-
-	// If the game ended, update leaderboard
-	if game.Status == "finished" && game.Winner != "Draw" {
-		updateLeaderboard(game.Winner, game.IncorrectGuesses)
-	}
-
-	http.Redirect(w, r, "/gameplay", http.StatusSeeOther)
+	// Optional: redirect or 405 method not allowed, because guessing will be over WS now
+	http.Error(w, "Use WebSocket to guess", http.StatusMethodNotAllowed)
 }
 
 // Build Game State for Template
@@ -333,7 +291,7 @@ func buildGameState(game *models.Game, role string) map[string]interface{} {
 		"Wrong":        strings.Join(wrong, ", "),
 		"GameOver":     game.Status == "finished",
 		"Winner":       game.Winner,
-		"Word":         game.Word, // ✅ pass the correct word
+		"Word":         game.Word,
 		"IsPlayerTurn": role == fmt.Sprintf("%d", game.PlayerTurn),
 	}
 }
@@ -408,7 +366,12 @@ func StateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Prepare correct and wrong letters
+	if game.Player2 != "" && game.Status == "in_progress" {
+		w.Header().Set("HX-Redirect", "/gameplay")
+		return
+	}
+
+	// Build correct and wrong letters
 	var correct, wrong []string
 	for letter, guessed := range game.GuessedLetters {
 		if guessed {
@@ -420,17 +383,44 @@ func StateHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	data := map[string]interface{}{
-		"DisplayWord": game.DisplayWord,
-		"Remaining":   game.MaxIncorrectGuesses - game.IncorrectGuesses,
-		"Correct":     strings.Join(correct, ", "),
-		"Wrong":       strings.Join(wrong, ", "),
-		"HasUsedHint": game.HasUsedHint,
-		"HintText":    game.HintText,
-		"Status":      game.Status,
-		"Winner":      game.Winner,
-		"Word":        game.Word,
+	// Collect player role and turn info
+	role := ""
+	roleCookie, err := r.Cookie("role")
+	if err == nil {
+		role = roleCookie.Value
 	}
 
-	utils.RenderPartial(w, r, "gameplay.html", data) // Renders only the dynamic block
+	isPlayerTurn := role == fmt.Sprintf("%d", game.PlayerTurn)
+
+	// Build state data
+	data := map[string]interface{}{
+		"GameID":       game.ID,
+		"Player1":      game.Player1,
+		"Player2":      game.Player2,
+		"DisplayWord":  game.DisplayWord,
+		"Remaining":    game.MaxIncorrectGuesses - game.IncorrectGuesses,
+		"Correct":      strings.Join(correct, ", "),
+		"Wrong":        strings.Join(wrong, ", "),
+		"HasUsedHint":  game.HasUsedHint,
+		"HintText":     game.HintText,
+		"Status":       game.Status,
+		"GameOver":     game.Status == "finished",
+		"Winner":       game.Winner,
+		"Word":         game.Word,
+		"IsPlayerTurn": isPlayerTurn,
+	}
+
+	// If game is waiting, render waiting page with polling
+	if game.Status == "waiting" {
+		// If Player 2 has joined, inject redirect script for HTMX client
+		if game.Player2 != "" {
+			fmt.Fprint(w, `<script>window.location.replace("/gameplay");</script>`)
+		} else {
+			utils.RenderPartial(w, r, "waiting.html", data)
+		}
+		return
+	}
+
+	// If game is in progress or finished, render gameplay
+	utils.RenderPartial(w, r, "gameplay.html", data)
 }

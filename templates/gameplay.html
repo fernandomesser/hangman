@@ -1,86 +1,206 @@
 {{define "title"}}Gameplay{{end}}
 
 {{define "content"}}
-<div
-  id="game-state"
-  hx-get="/state"
-  hx-trigger="every 2s"
-  hx-swap="outerHTML"
->
-  <div class="center-box">
-    <h2>Word Guessing Game</h2>
+<div class="center-box">
+  <h2>Word Guessing Game</h2>
 
-    <p><strong>Word:</strong> {{.DisplayWord}}</p>
-    <p><strong>Remaining Incorrect Guesses:</strong> {{.Remaining}}</p>
+  <!-- Static game state container -->
+  <div id="game-state">
+    <p><strong>Word:</strong> <span id="displayWord">{{.DisplayWord}}</span></p>
+    <p><strong>Remaining Incorrect Guesses:</strong> <span id="remaining">{{.Remaining}}</span></p>
 
     <div class="section">
       <p><strong>Correct Letters:</strong><br>
-        {{if .Correct}}{{.Correct}}{{else}}<em>None yet</em>{{end}}
+        <span id="correctLetters">{{if .Correct}}{{.Correct}}{{else}}<em>None yet</em>{{end}}</span>
       </p>
       <p><strong>Wrong Letters:</strong><br>
-        {{if .Wrong}}{{.Wrong}}{{else}}<em>None yet</em>{{end}}
+        <span id="wrongLetters">{{if .Wrong}}{{.Wrong}}{{else}}<em>None yet</em>{{end}}</span>
       </p>
     </div>
 
-    {{if .GameOver}}
-      <div class="section">
-        <p><strong>Game Over!</strong></p>
-        <p>
-          {{if eq .Winner "Draw"}}
-            It's a draw!
-          {{else}}
-            Winner: {{.Winner}}
-          {{end}}
-        </p>
-        <p><strong>The correct word was:</strong> <code>{{.Word}}</code></p>
-        <a class="button" href="/">Return to Home</a>
-      </div>
-    {{else if .IsPlayerTurn}}
+    <div class="section" id="gameover" {{if not .GameOver}}style="display:none"{{end}}>
+      <p><strong>Game Over!</strong></p>
+      <p>
+        {{if eq .Winner "Draw"}}It's a draw!
+        {{else}}Winner: <span id="winner">{{.Winner}}</span>{{end}}
+      </p>
+      <p><strong>The correct word was:</strong> <code id="word">{{.Word}}</code></p>
+      <a class="button" href="/">Return to Home</a>
+    </div>
 
-      <div class="section">
-        {{if .Error}}
-          <div class="error-box">{{.Error}}</div>
-        {{end}}
+    <div class="section" id="wait-msg" {{if not .IsPlayerTurn}}style="display:block"{{else}}style="display:none"{{end}}>
+      <p>Waiting for opponent’s turn...</p>
+      <div class="loader"></div>
+    </div>
+  </div>
 
-        <form method="POST" action="/guess">
-          <label for="letter">Guess a letter:</label>
-          <input id="letter" name="letter" maxlength="1" required
-                 style="text-transform: lowercase;" autocomplete="off">
-          <button type="submit">Guess</button>
-        </form>
-      </div>
+  <!-- GUESS FORM -->
+  {{if and (not .GameOver) .IsPlayerTurn}}
+  <div class="section" id="guess-form" style="display:block;">
+    <!-- Error message container -->
+    <div id="error-message" style="color: red; margin-bottom: 8px;"></div>
 
-      <div class="section">
-        <p><strong>Hint:</strong></p>
-        {{if .HasUsedHint}}
-          <p id="hintOutput">{{.HintText}}</p>
-        {{else}}
-          <button id="hintBtn" onclick="getHint()">Reveal Hint</button>
-          <p id="hintOutput"></p>
-        {{end}}
-      </div>
+    <form id="guessForm">
+      <label for="letter">Guess a letter:</label>
+      <input id="letter" name="letter" maxlength="1" required
+             style="text-transform: lowercase;" autocomplete="off" autofocus>
+      <button type="submit">Guess</button>
+    </form>
+  </div>
 
+  <div class="section">
+    <p><strong>Hint:</strong></p>
+    {{if .HasUsedHint}}
+      <p id="hintOutput">{{.HintText}}</p>
     {{else}}
-      <div class="section">
-        <p>Waiting for opponent’s turn...</p>
-        <div class="loader"></div>
-      </div>
+      <button id="hintBtn" onclick="getHint()">Reveal Hint</button>
+      <p id="hintOutput"></p>
     {{end}}
   </div>
+  {{end}}
 </div>
 
 <script>
-function getHint() {
-  fetch("/hint")
-    .then(resp => resp.text())
-    .then(txt => {
-      document.getElementById("hintOutput").innerText = txt;
-      const btn = document.getElementById("hintBtn");
-      if (btn) btn.remove();
-    })
-    .catch(() => {
-      document.getElementById("hintOutput").innerText = "Hint unavailable.";
-    });
-}
+  const playerName = "{{.User}}"; // Set from server template
+  const gameID = "{{.Game.ID}}";
+
+  const wsUrl = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/ws";
+  let ws = new WebSocket(wsUrl);
+
+  ws.onopen = () => {
+    console.log("WebSocket connected");
+  };
+
+  ws.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+
+    if (data.action === "error") {
+      const errorDiv = document.getElementById("error-message");
+      if (errorDiv) {
+        errorDiv.textContent = data.payload;
+      }
+      return;
+    }
+
+    if (data.action === "state") {
+      // Clear error on valid state update
+      const errorDiv = document.getElementById("error-message");
+      if (errorDiv) {
+        errorDiv.textContent = "";
+      }
+
+      updateGameUI(data.state);
+    }
+  };
+
+  ws.onclose = () => {
+    console.log("WebSocket disconnected");
+  };
+
+  function updateGameUI(state) {
+    document.getElementById("displayWord").textContent = state.DisplayWord;
+    document.getElementById("remaining").textContent = state.Remaining;
+    document.getElementById("correctLetters").textContent = state.Correct || "None yet";
+    document.getElementById("wrongLetters").textContent = state.Wrong || "None yet";
+
+    if (state.GameOver) {
+      document.getElementById("gameover").style.display = "block";
+      document.getElementById("winner").textContent = state.Winner;
+      document.getElementById("word").textContent = state.Word;
+    } else {
+      document.getElementById("gameover").style.display = "none";
+    }
+
+    // Show guess form only if it's this player's turn and game not over
+    const guessFormSection = document.getElementById("guess-form");
+    if (guessFormSection) {
+      if (!state.GameOver && state.IsPlayerTurn) {
+        guessFormSection.style.display = "block";
+      } else {
+        guessFormSection.style.display = "none";
+      }
+    }
+
+    // Waiting message toggled based on turn and game over
+    document.getElementById("wait-msg").style.display = (!state.GameOver && !state.IsPlayerTurn) ? "block" : "none";
+  }
+
+  document.getElementById("guessForm").addEventListener("submit", (e) => {
+    e.preventDefault();
+    const input = document.getElementById("letter");
+    const letter = input.value.trim().toLowerCase();
+    if (letter.length === 1 && letter >= "a" && letter <= "z") {
+      ws.send(JSON.stringify({
+        action: "guess",
+        payload: letter,
+        game_id: gameID,
+      }));
+      input.value = "";
+      input.focus();
+    } else {
+      const errorDiv = document.getElementById("error-message");
+      if (errorDiv) {
+        errorDiv.textContent = "Please enter a valid single letter (a-z).";
+      }
+    }
+  });
+
+  function getHint() {
+    fetch("/hint")
+      .then(resp => resp.text())
+      .then(txt => {
+        document.getElementById("hintOutput").innerText = txt;
+        const btn = document.getElementById("hintBtn");
+        if (btn) btn.remove();
+      })
+      .catch(() => {
+        document.getElementById("hintOutput").innerText = "Hint unavailable.";
+      });
+  }
 </script>
+
+<style>
+  /* Loader styling */
+  .loader {
+    border: 4px solid #f3f3f3;
+    border-top: 4px solid #3498db;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    animation: spin 1s linear infinite;
+    margin: 10px auto;
+  }
+  @keyframes spin {
+    0% { transform: rotate(0deg);}
+    100% { transform: rotate(360deg);}
+  }
+  /* Error box styling */
+  .error-box {
+    background-color: #f8d7da;
+    color: #721c24;
+    padding: 0.5em;
+    margin-bottom: 1em;
+    border-radius: 4px;
+  }
+  /* Center box styling */
+  .center-box {
+    max-width: 400px;
+    margin: 1.5em auto;
+    font-family: Arial, sans-serif;
+    text-align: center;
+  }
+  /* Button styling */
+  .button {
+    display: inline-block;
+    padding: 0.5em 1em;
+    background-color: #3498db;
+    color: white;
+    text-decoration: none;
+    border-radius: 4px;
+    margin-top: 1em;
+  }
+  .button:hover {
+    background-color: #2980b9;
+  }
+</style>
 {{end}}
