@@ -31,16 +31,15 @@ func LeaderboardHandler(w http.ResponseWriter, r *http.Request) {
 
 	for rows.Next() {
 		var username string
-		var wins, bestScore int
-
-		if err := rows.Scan(&username, &wins, &bestScore); err != nil {
+		var wins, best int
+		if err := rows.Scan(&username, &wins, &best); err != nil {
 			http.Error(w, "Row scan error: "+err.Error(), http.StatusInternalServerError)
 			return
 		}
 
 		score := "N/A"
-		if bestScore > 0 {
-			score = fmt.Sprintf("%d", bestScore)
+		if best > 0 {
+			score = fmt.Sprintf("%d", best)
 		}
 
 		entries = append(entries, LeaderboardEntry{
@@ -49,12 +48,6 @@ func LeaderboardHandler(w http.ResponseWriter, r *http.Request) {
 			BestScore: score,
 		})
 	}
-
-	utils.RenderPage(w, r, "leaderboard.html", map[string]interface{}{
-		"Entries": entries,
-	})
-}
-
 
 	utils.RenderPage(w, r, "leaderboard.html", map[string]interface{}{
 		"Entries": entries,
