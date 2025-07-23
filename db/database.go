@@ -19,13 +19,15 @@ var (
 
 // getDBPath returns the appropriate database path based on environment
 func getDBPath() string {
-	// For Vercel deployments
-	if os.Getenv("VERCEL") == "1" {
-		return "/tmp/hangman.db" // Vercel's writable tmp directory
-	}
-	// For local development
-	return "./hangman.db"
+    if path := os.Getenv("DB_PATH"); path != "" {
+        return path
+    }
+    if _, err := os.Stat("/data"); err == nil {
+        return "/data/hangman.db"
+    }
+    return "./hangman.db" // local development fallback
 }
+
 
 // InitDB initializes the database connection and schema
 func InitDB() {

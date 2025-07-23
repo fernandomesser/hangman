@@ -346,15 +346,13 @@ func generatePartialGameHTML(game *models.Game, role string) string {
 }
 
 func updateLeaderboard(winner string, incorrectGuesses int) {
-	// Step 1: lookup user ID by username
 	var userID int
 	err := db.DB.QueryRow("SELECT id FROM users WHERE username = ?", winner).Scan(&userID)
 	if err != nil {
-		fmt.Println("Failed to get user ID for leaderboard:", err)
+		fmt.Println("Leaderboard update error: could not find user", winner)
 		return
 	}
 
-	// Step 2: update leaderboard using userID
 	_, err = db.DB.Exec(`
 		INSERT INTO leaderboard (player, wins, best_score)
 		VALUES (?, 1, ?)
@@ -362,12 +360,10 @@ func updateLeaderboard(winner string, incorrectGuesses int) {
 			wins = wins + 1,
 			best_score = CASE WHEN best_score IS NULL OR ? < best_score THEN ? ELSE best_score END
 	`, userID, incorrectGuesses, incorrectGuesses, incorrectGuesses)
-
 	if err != nil {
 		fmt.Println("Leaderboard update error:", err)
 	}
 }
-
 
 
 func HintHandler(w http.ResponseWriter, r *http.Request) {
