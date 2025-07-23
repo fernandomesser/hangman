@@ -15,34 +15,46 @@ type LeaderboardEntry struct {
 
 func LeaderboardHandler(w http.ResponseWriter, r *http.Request) {
 	rows, err := db.DB.Query(`
-		SELECT player, wins, best_score
-		FROM leaderboard
-		ORDER BY wins DESC, best_score ASC
+		SELECT u.username, l.wins, l.best_score
+		FROM leaderboard l
+		JOIN users u ON l.player = u.id
+		ORDER BY l.wins DESC, l.best_score ASC
 		LIMIT 10
 	`)
 	if err != nil {
-		http.Error(w, "DB error: "+err.Error(), 500)
+		http.Error(w, "DB error: "+err.Error(), http.StatusInternalServerError)
 		return
 	}
 	defer rows.Close()
 
 	var entries []LeaderboardEntry
+
 	for rows.Next() {
-		var user string
-		var wins, best int
-		rows.Scan(&user, &wins, &best)
+		var username string
+		var wins, bestScore int
+
+		if err := rows.Scan(&username, &wins, &bestScore); err != nil {
+			http.Error(w, "Row scan error: "+err.Error(), http.StatusInternalServerError)
+			return
+		}
 
 		score := "N/A"
-		if best > 0 {
-			score = fmt.Sprintf("%d", best)
+		if bestScore > 0 {
+			score = fmt.Sprintf("%d", bestScore)
 		}
 
 		entries = append(entries, LeaderboardEntry{
-			Player:    user,
+			Player:    username,
 			Wins:      wins,
 			BestScore: score,
 		})
 	}
+
+	utils.RenderPage(w, r, "leaderboard.html", map[string]interface{}{
+		"Entries": entries,
+	})
+}
+
 
 	utils.RenderPage(w, r, "leaderboard.html", map[string]interface{}{
 		"Entries": entries,

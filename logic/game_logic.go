@@ -35,7 +35,6 @@ func GetHint(game *models.Game) (string, error) {
 	rand.Seed(time.Now().UnixNano())
 	hintLetter := unguessed[rand.Intn(len(unguessed))]
 
-	game.GuessedLetters[hintLetter] = true
 	game.HasUsedHint = true
 	game.HintText = fmt.Sprintf("Try the letter '%s'.", hintLetter)
 

@@ -365,20 +365,29 @@ func generatePartialGameHTML(game *models.Game, role string) string {
 }
 
 func updateLeaderboard(winner string, incorrectGuesses int) {
-	_, err := db.DB.Exec(`
+	// Step 1: lookup user ID by username
+	var userID int
+	err := db.DB.QueryRow("SELECT id FROM users WHERE username = ?", winner).Scan(&userID)
+	if err != nil {
+		fmt.Println("Failed to get user ID for leaderboard:", err)
+		return
+	}
+
+	// Step 2: update leaderboard using userID
+	_, err = db.DB.Exec(`
 		INSERT INTO leaderboard (player, wins, best_score)
 		VALUES (?, 1, ?)
 		ON CONFLICT(player) DO UPDATE SET
 			wins = wins + 1,
-			best_score = CASE
-				WHEN best_score IS NULL OR ? < best_score THEN ?
-				ELSE best_score END
-	`, winner, incorrectGuesses, incorrectGuesses, incorrectGuesses)
+			best_score = CASE WHEN best_score IS NULL OR ? < best_score THEN ? ELSE best_score END
+	`, userID, incorrectGuesses, incorrectGuesses, incorrectGuesses)
 
 	if err != nil {
 		fmt.Println("Leaderboard update error:", err)
 	}
 }
+
+
 
 func HintHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("game_id")
@@ -405,4 +414,44 @@ func HintHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	fmt.Fprint(w, hint)
+}
+
+func StateHandler(w http.ResponseWriter, r *http.Request) {
+	cookie, err := r.Cookie("game_id")
+	if err != nil || cookie.Value == "" {
+		http.Error(w, "Missing game ID", http.StatusBadRequest)
+		return
+	}
+	gameID := cookie.Value
+	game, ok := games[gameID]
+	if !ok {
+		http.Error(w, "Game not found", http.StatusNotFound)
+		return
+	}
+
+	// Prepare correct and wrong letters
+	var correct, wrong []string
+	for letter, guessed := range game.GuessedLetters {
+		if guessed {
+			if strings.Contains(game.Word, letter) {
+				correct = append(correct, letter)
+			} else {
+				wrong = append(wrong, letter)
+			}
+		}
+	}
+
+	data := map[string]interface{}{
+		"DisplayWord": game.DisplayWord,
+		"Remaining":   game.MaxIncorrectGuesses - game.IncorrectGuesses,
+		"Correct":     strings.Join(correct, ", "),
+		"Wrong":       strings.Join(wrong, ", "),
+		"HasUsedHint": game.HasUsedHint,
+		"HintText":    game.HintText,
+		"Status":      game.Status,
+		"Winner":      game.Winner,
+		"Word":        game.Word,
+	}
+
+	utils.RenderPartial(w, r, "gameplay.html", data) // Renders only the dynamic block
 }

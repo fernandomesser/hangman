@@ -51,3 +51,12 @@ func RenderPage(w http.ResponseWriter, r *http.Request, file string, data map[st
 		log.Println("TEMPLATE EXEC ERROR:", err)
 	}
 }
+
+func RenderPartial(w http.ResponseWriter, r *http.Request, file string, data map[string]interface{}) {
+	tmpl := template.Must(template.ParseFiles("templates/" + file))
+	if err := tmpl.ExecuteTemplate(w, "content", data); err != nil {
+		http.Error(w, "Template error: "+err.Error(), http.StatusInternalServerError)
+		log.Println("TEMPLATE EXEC ERROR (partial):", err)
+	}
+}
+
