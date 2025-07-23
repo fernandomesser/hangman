@@ -19,14 +19,21 @@ var (
 
 // getDBPath returns the appropriate database path based on environment
 func getDBPath() string {
-    if path := os.Getenv("DB_PATH"); path != "" {
-        return path
+    // Priority: use Railway environment variable (manually set)
+    envPath := os.Getenv("DB_PATH")
+    if envPath != "" {
+        return envPath
     }
+
+    // If /data exists, assume volume is mounted there
     if _, err := os.Stat("/data"); err == nil {
         return "/data/hangman.db"
     }
-    return "./hangman.db" // local development fallback
+
+    // Fallback (local only)
+    return "./hangman.db"
 }
+
 
 
 // InitDB initializes the database connection and schema
