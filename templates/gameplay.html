@@ -38,16 +38,6 @@
     {{else if .IsPlayerTurn}}
 
       <div class="section">
-        <p><strong>Hint:</strong></p>
-        {{if .HasUsedHint}}
-          <p id="hintOutput">{{.HintText}}</p>
-        {{else}}
-          <button id="hintBtn" onclick="getHint()">Reveal Hint</button>
-          <p id="hintOutput"></p>
-        {{end}}
-      </div>
-
-      <div class="section">
         {{if .Error}}
           <div class="error-box">{{.Error}}</div>
         {{end}}
@@ -58,6 +48,16 @@
                  style="text-transform: lowercase;" autocomplete="off">
           <button type="submit">Guess</button>
         </form>
+      </div>
+
+      <div class="section">
+        <p><strong>Hint:</strong></p>
+        {{if .HasUsedHint}}
+          <p id="hintOutput">{{.HintText}}</p>
+        {{else}}
+          <button id="hintBtn" onclick="getHint()">Reveal Hint</button>
+          <p id="hintOutput"></p>
+        {{end}}
       </div>
 
     {{else}}

@@ -160,19 +160,17 @@ func WaitRoomHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-
 	game, ok := games[gameIDCookie.Value]
 	if !ok {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
-	if game.Player2 == "" && game.Player2 != "Computer" {
-		html := fmt.Sprintf("<div class='center-box'><h2>Game ID: %s</h2><p>Waiting for player 2...</p><meta http-equiv='refresh' content='2'></div>", game.ID)
-		w.Write([]byte(html))
-	} else {
-		http.Redirect(w, r, "/gameplay", http.StatusSeeOther)
+	data := map[string]interface{}{
+		"GameID":  game.ID,
+		"Player1": game.Player1,
 	}
+	utils.RenderPage(w, r, "waiting.html", data)
 }
 
 // Game View Handler (GET)
@@ -364,7 +362,6 @@ func updateLeaderboard(winner string, incorrectGuesses int) {
 		fmt.Println("Leaderboard update error:", err)
 	}
 }
-
 
 func HintHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("game_id")
