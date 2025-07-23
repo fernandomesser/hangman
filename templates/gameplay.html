@@ -22,16 +22,6 @@
       </p>
     </div>
 
-    <div class="section">
-      <p><strong>Hint:</strong></p>
-      {{if .HasUsedHint}}
-        <p id="hintOutput">{{.HintText}}</p>
-      {{else}}
-        <button id="hintBtn" onclick="getHint()">Reveal Hint</button>
-        <p id="hintOutput"></p>
-      {{end}}
-    </div>
-
     {{if .GameOver}}
       <div class="section">
         <p><strong>Game Over!</strong></p>
@@ -46,6 +36,17 @@
         <a class="button" href="/">Return to Home</a>
       </div>
     {{else if .IsPlayerTurn}}
+
+      <div class="section">
+        <p><strong>Hint:</strong></p>
+        {{if .HasUsedHint}}
+          <p id="hintOutput">{{.HintText}}</p>
+        {{else}}
+          <button id="hintBtn" onclick="getHint()">Reveal Hint</button>
+          <p id="hintOutput"></p>
+        {{end}}
+      </div>
+
       <div class="section">
         {{if .Error}}
           <div class="error-box">{{.Error}}</div>
@@ -58,6 +59,7 @@
           <button type="submit">Guess</button>
         </form>
       </div>
+
     {{else}}
       <div class="section">
         <p>Waiting for opponent’s turn...</p>
