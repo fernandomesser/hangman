@@ -59,4 +59,3 @@ func RenderPartial(w http.ResponseWriter, r *http.Request, file string, data map
 		log.Println("TEMPLATE EXEC ERROR (partial):", err)
 	}
 }
-

@@ -160,17 +160,22 @@ func WaitRoomHandler(w http.ResponseWriter, r *http.Request) {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
+
 	game, ok := games[gameIDCookie.Value]
 	if !ok {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
-	data := map[string]interface{}{
-		"GameID":  game.ID,
-		"Player1": game.Player1,
+	if game.Player2 == "" && game.Player2 != "Computer" {
+		data := map[string]interface{}{
+			"GameID":  game.ID,
+			"Player1": game.Player1,
+		}
+		utils.RenderPage(w, r, "waiting.html", data)
+	} else {
+		http.Redirect(w, r, "/gameplay", http.StatusSeeOther)
 	}
-	utils.RenderPage(w, r, "waiting.html", data)
 }
 
 // Game View Handler (GET)
