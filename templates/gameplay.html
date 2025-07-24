@@ -4,7 +4,7 @@
 <div class="center-box">
   <h2>Word Guessing Game</h2>
 
-  <!-- Static game state container -->
+  <!-- Game State Info -->
   <div id="game-state">
     <p><strong>Word:</strong> <span id="displayWord">{{.DisplayWord}}</span></p>
     <p><strong>Remaining Incorrect Guesses:</strong> <span id="remaining">{{.Remaining}}</span></p>
@@ -18,6 +18,7 @@
       </p>
     </div>
 
+    <!-- Gameover block (always rendered, JS toggles display) -->
     <div class="section" id="gameover" {{if not .GameOver}}style="display:none"{{end}}>
       <p><strong>Game Over!</strong></p>
       <p>
@@ -28,40 +29,37 @@
       <a class="button" href="/">Return to Home</a>
     </div>
 
-    <div class="section" id="wait-msg" {{if not .IsPlayerTurn}}style="display:block"{{else}}style="display:none"{{end}}>
+    <!-- Waiting block: always present, toggled in JS -->
+    <div class="section" id="wait-msg" {{if .IsPlayerTurn}}style="display:none"{{else}}style="display:block"{{end}}>
       <p>Waiting for opponent’s turn...</p>
       <div class="loader"></div>
     </div>
   </div>
 
-  <!-- GUESS FORM -->
-  {{if and (not .GameOver) .IsPlayerTurn}}
-  <div class="section" id="guess-form" style="display:block;">
-    <!-- Error message container -->
+  <!-- GUESS FORM: always rendered, JS toggles display -->
+  <div class="section" id="guess-form" {{if .IsPlayerTurn}}style="display:block;"{{else}}style="display:none;"{{end}}>
     <div id="error-message" style="color: red; margin-bottom: 8px;"></div>
-
     <form id="guessForm">
       <label for="letter">Guess a letter:</label>
       <input id="letter" name="letter" maxlength="1" required
              style="text-transform: lowercase;" autocomplete="off" autofocus>
       <button type="submit">Guess</button>
     </form>
-  </div>
 
-  <div class="section">
-    <p><strong>Hint:</strong></p>
-    {{if .HasUsedHint}}
-      <p id="hintOutput">{{.HintText}}</p>
-    {{else}}
-      <button id="hintBtn" onclick="getHint()">Reveal Hint</button>
-      <p id="hintOutput"></p>
-    {{end}}
+    <div class="section">
+      <p><strong>Hint:</strong></p>
+      {{if .HasUsedHint}}
+        <p id="hintOutput">{{.HintText}}</p>
+      {{else}}
+        <button id="hintBtn" onclick="getHint()">Reveal Hint</button>
+        <p id="hintOutput"></p>
+      {{end}}
+    </div>
   </div>
-  {{end}}
 </div>
 
 <script>
-  const playerName = "{{.User}}"; // Set from server template
+  const playerName = "{{.User}}";
   const gameID = "{{.Game.ID}}";
 
   const wsUrl = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/ws";
@@ -76,18 +74,13 @@
 
     if (data.action === "error") {
       const errorDiv = document.getElementById("error-message");
-      if (errorDiv) {
-        errorDiv.textContent = data.payload;
-      }
+      if (errorDiv) errorDiv.textContent = data.payload;
       return;
     }
 
     if (data.action === "state") {
-      // Clear error on valid state update
       const errorDiv = document.getElementById("error-message");
-      if (errorDiv) {
-        errorDiv.textContent = "";
-      }
+      if (errorDiv) errorDiv.textContent = "";
 
       updateGameUI(data.state);
     }
@@ -103,6 +96,7 @@
     document.getElementById("correctLetters").textContent = state.Correct || "None yet";
     document.getElementById("wrongLetters").textContent = state.Wrong || "None yet";
 
+    // Game over
     if (state.GameOver) {
       document.getElementById("gameover").style.display = "block";
       document.getElementById("winner").textContent = state.Winner;
@@ -111,7 +105,7 @@
       document.getElementById("gameover").style.display = "none";
     }
 
-    // Show guess form only if it's this player's turn and game not over
+    // Guess form toggle
     const guessFormSection = document.getElementById("guess-form");
     if (guessFormSection) {
       if (!state.GameOver && state.IsPlayerTurn) {
@@ -121,7 +115,7 @@
       }
     }
 
-    // Waiting message toggled based on turn and game over
+    // Waiting message toggle
     document.getElementById("wait-msg").style.display = (!state.GameOver && !state.IsPlayerTurn) ? "block" : "none";
   }
 
@@ -139,9 +133,7 @@
       input.focus();
     } else {
       const errorDiv = document.getElementById("error-message");
-      if (errorDiv) {
-        errorDiv.textContent = "Please enter a valid single letter (a-z).";
-      }
+      if (errorDiv) errorDiv.textContent = "Please enter a valid single letter (a-z).";
     }
   });
 
@@ -160,7 +152,6 @@
 </script>
 
 <style>
-  /* Loader styling */
   .loader {
     border: 4px solid #f3f3f3;
     border-top: 4px solid #3498db;
@@ -174,7 +165,6 @@
     0% { transform: rotate(0deg);}
     100% { transform: rotate(360deg);}
   }
-  /* Error box styling */
   .error-box {
     background-color: #f8d7da;
     color: #721c24;
@@ -182,14 +172,12 @@
     margin-bottom: 1em;
     border-radius: 4px;
   }
-  /* Center box styling */
   .center-box {
     max-width: 400px;
     margin: 1.5em auto;
     font-family: Arial, sans-serif;
     text-align: center;
   }
-  /* Button styling */
   .button {
     display: inline-block;
     padding: 0.5em 1em;
