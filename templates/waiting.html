@@ -21,7 +21,7 @@
         <div style="font-size:1.2em;margin-bottom:0.6em;">
           <strong>Game Code:</strong>
           <code id="game-code" style="background:#e7f0fe;padding:0.22em 0.45em;border-radius:4px;">{{.GameID}}</code>
-          <button id="copy-btn" onclick="copyGameLink()" style="margin-left:0.5em;padding:0.2em 0.6em;font-size:0.93em;">Copy Link</button>
+          <button id="copy-btn" onclick="copyGameCode()" style="margin-left:0.5em;padding:0.2em 0.6em;font-size:0.93em;">Copy Code</button>
         </div>
 
         <div style="color:#888;font-size:0.96em;">
@@ -41,12 +41,12 @@
 </div>
 
 <script>
-function copyGameLink() {
-  const link = window.location.origin + '/join?game_id={{.GameID}}';
-  navigator.clipboard.writeText(link);
+function copyGameCode() {
+  const code = "{{.GameID}}";
+  navigator.clipboard.writeText(code);
   document.getElementById('copy-btn').textContent = 'Copied!';
   setTimeout(() => {
-    document.getElementById('copy-btn').textContent = 'Copy Link';
+    document.getElementById('copy-btn').textContent = 'Copy Code';
   }, 1500);
 }
 </script>

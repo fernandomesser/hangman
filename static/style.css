@@ -111,17 +111,6 @@ html, body {
     color: #184c93;
   }
   
-  .error-box {
-    background: #ffeaea;
-    border: 1px solid #d73b3b;
-    color: #a82222;
-    text-align: center;
-    border-radius: 5px;
-    padding: 0.95em 0.75em;
-    margin-bottom: 1.2em;
-    box-shadow: 0 0.5px 7px #d73b3b14;
-  }
-  
   @media (max-width: 600px) {
     .center-box {
       max-width: 98vw;
@@ -155,9 +144,9 @@ html, body {
   }
   
   .error-box {
-  color: #fff;
-  background-color: #d9534f;
-  padding: 10px;
-  border-radius: 8px;
-  margin-bottom: 10px;
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 0.5em;
+  margin-bottom: 1em;
+  border-radius: 4px;
 }
