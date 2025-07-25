@@ -4,7 +4,7 @@ A full-stack, Hangman game supporting multiplayer and AI gameplay. Features real
 
 ## To play the game just visit:  
 https://hangman-challenge.up.railway.app/  
-(all variables already set up)
+
 
 ## Local Setup:
 ```
