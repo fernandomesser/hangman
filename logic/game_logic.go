@@ -181,7 +181,7 @@ func RegisterGuess(game *models.Game, letter string) error {
 
 	// Mark letter as guessed
 	game.GuessedLetters[letter] = true
-
+	game.GuessHistory = append(game.GuessHistory, letter)
 	// Rebuild the display word, with spaces separating revealed letters and underscores for missing ones
 	newDisplay := ""
 	for _, c := range game.Word {

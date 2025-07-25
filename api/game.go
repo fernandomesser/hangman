@@ -199,9 +199,16 @@ func GameplayHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	lastGuess := ""
+	if len(game.GuessHistory) > 0 {
+		lastGuess = game.GuessHistory[len(game.GuessHistory)-1]
+	}
+
 	// Build data for template: game state, guess history, winner, etc.
 	data := map[string]interface{}{
 		"Game":         game,
+		"Player1":      game.Player1,
+		"Player2":      game.Player2,
 		"Word":         game.Word,
 		"DisplayWord":  game.DisplayWord,
 		"Remaining":    game.MaxIncorrectGuesses - game.IncorrectGuesses,
@@ -212,6 +219,7 @@ func GameplayHandler(w http.ResponseWriter, r *http.Request) {
 		"Winner":       game.Winner,
 		"HasUsedHint":  game.HasUsedHint,
 		"HintText":     game.HintText,
+		"LastGuess":    lastGuess,
 	}
 
 	// Get and display any error messages, then clear the cookie
@@ -280,6 +288,10 @@ func buildGameState(game *models.Game, role string) map[string]interface{} {
 	}
 	sort.Strings(correct)
 	sort.Strings(wrong)
+	lastGuess := ""
+	if len(game.GuessHistory) > 0 {
+		lastGuess = game.GuessHistory[len(game.GuessHistory)-1]
+	}
 	return map[string]interface{}{
 		"DisplayWord":  game.DisplayWord,
 		"Remaining":    game.MaxIncorrectGuesses - game.IncorrectGuesses,
@@ -289,6 +301,7 @@ func buildGameState(game *models.Game, role string) map[string]interface{} {
 		"Winner":       game.Winner,
 		"Word":         game.Word,
 		"IsPlayerTurn": role == fmt.Sprintf("%d", game.PlayerTurn),
+		"LastGuess":    lastGuess,
 	}
 }
 

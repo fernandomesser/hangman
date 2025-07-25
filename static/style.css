@@ -33,7 +33,7 @@ html, body {
   }
   
   .section {
-    background: #f7fafc;
+    background: #e9f1f7;
     border-radius: 10px;
     margin-bottom: 1.8em;
     padding: 1em 1em 1.4em 1em;
@@ -149,4 +149,34 @@ html, body {
   padding: 10px;
   border-radius: 8px;
   margin-bottom: 10px;
+}
+
+.auth-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 0.7em;
+  align-items: center;
+  margin: 1.3em 0;
+}
+
+.auth-buttons .button {
+  width: 100%;
+  max-width: 270px;
+  text-align: center;
+  padding: 0.95em 0;
+  font-size: 1.09em;
+  background: linear-gradient(90deg, #2876e2 0%, #69d2ff 100%);
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-weight: bold;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.22s, box-shadow 0.19s;
+  letter-spacing: 0.2px;
+  box-shadow: 0 2px 10px #2876e228;
+}
+.auth-buttons .button:hover, .auth-buttons .button:focus {
+  background: linear-gradient(90deg, #195fa9 0%, #39b6ed 100%);
+  outline: none;
 }

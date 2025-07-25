@@ -4,32 +4,61 @@
 <div class="center-box">
   <h2>Word Guessing Game</h2>
 
-  <!-- --- Game State Display --- -->
+  <!-- --- Opponent Display --- -->
+  <div class="section" style="margin-bottom:1em;">
+    {{if and .Player1 .Player2}}
+      {{if eq .User .Player1}}
+        <strong>You are playing against:</strong>
+        <span class="opponent-name">{{.Player2}}</span>
+      {{else}}
+        <strong>You are playing against:</strong>
+        <span class="opponent-name">{{.Player1}}</span>
+      {{end}}
+    {{else if .Player2}}
+      <strong>You are playing against:</strong>
+      <span class="opponent-name">{{.Player2}}</span>
+    {{else}}
+      <strong>Waiting for opponent to join...</strong>
+    {{end}}
+  </div>
+
   <div id="game-state">
     <p><strong>Word:</strong> <span id="displayWord">{{.DisplayWord}}</span></p>
     <p><strong>Remaining Incorrect Guesses:</strong> <span id="remaining">{{.Remaining}}</span></p>
 
+    <!-- --- Last Letter Guessed --- -->
     <div class="section">
-      <p><strong>Correct Letters:</strong><br>
-        <span id="correctLetters">
-            {{if .Correct}}{{.Correct}}{{else}}<em>None yet</em>{{end}}
-        </span>
-      </p>
-      <p><strong>Wrong Letters:</strong><br>
-        <span id="wrongLetters">
-            {{if .Wrong}}{{.Wrong}}{{else}}<em>None yet</em>{{end}}
-        </span>
-      </p>
-    </div>
+  <p>
+    <strong>Last guess:</strong>
+    {{if .LastGuess}}
+      <span id="lastGuessedLetter">{{.LastGuess}}</span>
+    {{else}}
+      <em id="lastGuessedLetter">None yet</em>
+    {{end}}
+  </p>
+  <p>
+    <strong>Correct Letters:</strong><br>
+    <span id="correctLetters">
+      {{if .Correct}}{{.Correct}}{{else}}<em>None yet</em>{{end}}
+    </span>
+  </p>
+  <p>
+    <strong>Wrong Letters:</strong><br>
+    <span id="wrongLetters">
+      {{if .Wrong}}{{.Wrong}}{{else}}<em>None yet</em>{{end}}
+    </span>
+  </p>
+</div>
+
 
     <!-- --- Game Over Message Block --- -->
     <div class="section" id="gameover" {{if not .GameOver}}style="display:none"{{end}}>
       <p><strong>Game Over!</strong></p>
       <p>
         {{if eq .Winner "Draw"}}
-            It's a draw!
+          It's a draw!
         {{else}}
-            Winner: <span id="winner">{{.Winner}}</span>
+          Winner: <span id="winner">{{.Winner}}</span>
         {{end}}
       </p>
       <p><strong>The correct word was:</strong> <code id="word">{{.Word}}</code></p>
@@ -46,7 +75,6 @@
   <!-- --- Guess Form --- -->
   <div class="section" id="guess-form" {{if .IsPlayerTurn}}style="display:block;"{{else}}style="display:none;"{{end}}>
     <div id="error-message" class="error-box" style="display: none;"></div>
-
     <form id="guessForm">
       <label for="letter">Guess a letter:</label>
       <input id="letter" name="letter" maxlength="1" required
@@ -108,6 +136,8 @@
     document.getElementById("remaining").textContent = state.Remaining;
     document.getElementById("correctLetters").textContent = state.Correct || "None yet";
     document.getElementById("wrongLetters").textContent = state.Wrong || "None yet";
+    // Update last guessed letter
+    document.getElementById("lastGuessedLetter").textContent = state.LastGuess || "None yet";
 
     if (state.GameOver) {
       document.getElementById("gameover").style.display = "block";
@@ -187,19 +217,17 @@
     100% { transform: rotate(360deg);}
   }
 
-  .error-box {
-    color: #fff;
-    background-color: #d9534f;
-    padding: 10px;
-    border-radius: 8px;
-    margin-bottom: 10px;
-  }
-
   .center-box {
     max-width: 400px;
     margin: 1.5em auto;
     font-family: Arial, sans-serif;
     text-align: center;
+  }
+
+  .opponent-name {
+    color: #2c3e50;
+    font-weight: bold;
+    margin-left: 0.2em;
   }
 
   .button {

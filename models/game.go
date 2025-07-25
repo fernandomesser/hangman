@@ -14,4 +14,5 @@ type Game struct {
 	Winner              string
 	HasUsedHint         bool
 	HintText            string
+	GuessHistory        []string
 }
