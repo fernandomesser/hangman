@@ -4,41 +4,49 @@
 <div class="center-box">
   <h2>Word Guessing Game</h2>
 
-  <!-- Game State Info -->
+  <!-- --- Game State Display --- -->
   <div id="game-state">
     <p><strong>Word:</strong> <span id="displayWord">{{.DisplayWord}}</span></p>
     <p><strong>Remaining Incorrect Guesses:</strong> <span id="remaining">{{.Remaining}}</span></p>
 
     <div class="section">
       <p><strong>Correct Letters:</strong><br>
-        <span id="correctLetters">{{if .Correct}}{{.Correct}}{{else}}<em>None yet</em>{{end}}</span>
+        <span id="correctLetters">
+            {{if .Correct}}{{.Correct}}{{else}}<em>None yet</em>{{end}}
+        </span>
       </p>
       <p><strong>Wrong Letters:</strong><br>
-        <span id="wrongLetters">{{if .Wrong}}{{.Wrong}}{{else}}<em>None yet</em>{{end}}</span>
+        <span id="wrongLetters">
+            {{if .Wrong}}{{.Wrong}}{{else}}<em>None yet</em>{{end}}
+        </span>
       </p>
     </div>
 
-    <!-- Gameover block (always rendered, JS toggles display) -->
+    <!-- --- Game Over Message Block --- -->
     <div class="section" id="gameover" {{if not .GameOver}}style="display:none"{{end}}>
       <p><strong>Game Over!</strong></p>
       <p>
-        {{if eq .Winner "Draw"}}It's a draw!
-        {{else}}Winner: <span id="winner">{{.Winner}}</span>{{end}}
+        {{if eq .Winner "Draw"}}
+            It's a draw!
+        {{else}}
+            Winner: <span id="winner">{{.Winner}}</span>
+        {{end}}
       </p>
       <p><strong>The correct word was:</strong> <code id="word">{{.Word}}</code></p>
       <a class="button" href="/">Return to Home</a>
     </div>
 
-    <!-- Waiting block: always present, toggled in JS -->
+    <!-- --- Waiting for Opponent Block --- -->
     <div class="section" id="wait-msg" {{if .IsPlayerTurn}}style="display:none"{{else}}style="display:block"{{end}}>
       <p>Waiting for opponent’s turn...</p>
       <div class="loader"></div>
     </div>
   </div>
 
-  <!-- GUESS FORM: always rendered, JS toggles display -->
+  <!-- --- Guess Form --- -->
   <div class="section" id="guess-form" {{if .IsPlayerTurn}}style="display:block;"{{else}}style="display:none;"{{end}}>
-    <div id="error-message" style="color: red; margin-bottom: 8px;"></div>
+    <div id="error-message" class="error-box" style="display: none;"></div>
+
     <form id="guessForm">
       <label for="letter">Guess a letter:</label>
       <input id="letter" name="letter" maxlength="1" required
@@ -58,10 +66,10 @@
   </div>
 </div>
 
+<!-- --------- JavaScript --------- -->
 <script>
   const playerName = "{{.User}}";
   const gameID = "{{.Game.ID}}";
-
   const wsUrl = (window.location.protocol === "https:" ? "wss://" : "ws://") + window.location.host + "/ws";
   let ws = new WebSocket(wsUrl);
 
@@ -74,14 +82,19 @@
 
     if (data.action === "error") {
       const errorDiv = document.getElementById("error-message");
-      if (errorDiv) errorDiv.textContent = data.payload;
+      if (errorDiv) {
+        errorDiv.textContent = data.payload;
+        errorDiv.style.display = "block";
+      }
       return;
     }
 
     if (data.action === "state") {
       const errorDiv = document.getElementById("error-message");
-      if (errorDiv) errorDiv.textContent = "";
-
+      if (errorDiv) {
+        errorDiv.textContent = "";
+        errorDiv.style.display = "none";
+      }
       updateGameUI(data.state);
     }
   };
@@ -96,7 +109,6 @@
     document.getElementById("correctLetters").textContent = state.Correct || "None yet";
     document.getElementById("wrongLetters").textContent = state.Wrong || "None yet";
 
-    // Game over
     if (state.GameOver) {
       document.getElementById("gameover").style.display = "block";
       document.getElementById("winner").textContent = state.Winner;
@@ -105,7 +117,6 @@
       document.getElementById("gameover").style.display = "none";
     }
 
-    // Guess form toggle
     const guessFormSection = document.getElementById("guess-form");
     if (guessFormSection) {
       if (!state.GameOver && state.IsPlayerTurn) {
@@ -115,14 +126,16 @@
       }
     }
 
-    // Waiting message toggle
-    document.getElementById("wait-msg").style.display = (!state.GameOver && !state.IsPlayerTurn) ? "block" : "none";
+    document.getElementById("wait-msg").style.display =
+      (!state.GameOver && !state.IsPlayerTurn) ? "block" : "none";
   }
 
   document.getElementById("guessForm").addEventListener("submit", (e) => {
     e.preventDefault();
     const input = document.getElementById("letter");
     const letter = input.value.trim().toLowerCase();
+    const errorDiv = document.getElementById("error-message");
+
     if (letter.length === 1 && letter >= "a" && letter <= "z") {
       ws.send(JSON.stringify({
         action: "guess",
@@ -131,9 +144,16 @@
       }));
       input.value = "";
       input.focus();
+
+      if (errorDiv) {
+        errorDiv.textContent = "";
+        errorDiv.style.display = "none";
+      }
     } else {
-      const errorDiv = document.getElementById("error-message");
-      if (errorDiv) errorDiv.textContent = "Please enter a valid single letter (a-z).";
+      if (errorDiv) {
+        errorDiv.textContent = "Please enter a valid single letter (a-z).";
+        errorDiv.style.display = "block";
+      }
     }
   });
 
@@ -151,6 +171,7 @@
   }
 </script>
 
+<!-- --------- CSS --------- -->
 <style>
   .loader {
     border: 4px solid #f3f3f3;
@@ -165,19 +186,22 @@
     0% { transform: rotate(0deg);}
     100% { transform: rotate(360deg);}
   }
+
   .error-box {
-  background-color: #f8d7da;
-  color: #721c24;
-  padding: 0.5em;
-  margin-bottom: 1em;
-  border-radius: 4px;
-}
+    color: #fff;
+    background-color: #d9534f;
+    padding: 10px;
+    border-radius: 8px;
+    margin-bottom: 10px;
+  }
+
   .center-box {
     max-width: 400px;
     margin: 1.5em auto;
     font-family: Arial, sans-serif;
     text-align: center;
   }
+
   .button {
     display: inline-block;
     padding: 0.5em 1em;
@@ -187,6 +211,7 @@
     border-radius: 4px;
     margin-top: 1em;
   }
+
   .button:hover {
     background-color: #2980b9;
   }

@@ -16,12 +16,14 @@ import (
 	"wordgame/words"
 )
 
-var wsBroadcast = make(chan WSMessage, 16) // buffered broadcast channel
+// Broadcast channel for websocket messages; buffered for up to 16 messages
+var wsBroadcast = make(chan WSMessage, 16)
 
-// In-memory game store
+// In-memory map to hold all games; key is game ID, value: pointer to game struct
 var games = make(map[string]*models.Game)
 
-// Helper: safely get logged-in user
+// Helper: Retrieve the current logged-in user from cookie.
+// If missing or invalid, redirect to login and return ("", false).
 func getUser(w http.ResponseWriter, r *http.Request) (string, bool) {
 	cookie, err := r.Cookie("user")
 	if err != nil || cookie.Value == "" {
@@ -31,14 +33,14 @@ func getUser(w http.ResponseWriter, r *http.Request) (string, bool) {
 	return cookie.Value, true
 }
 
-// Helper: set game session cookies
+// Helper: Set cookies for game state (game id, player name, player role ID, e.g. "1" or "2")
 func setGameCookies(w http.ResponseWriter, id, player, role string) {
 	http.SetCookie(w, &http.Cookie{Name: "game_id", Value: id, Path: "/"})
 	http.SetCookie(w, &http.Cookie{Name: "player_name", Value: player, Path: "/"})
-	http.SetCookie(w, &http.Cookie{Name: "role", Value: role, Path: "/"}) // "1" or "2"
+	http.SetCookie(w, &http.Cookie{Name: "role", Value: role, Path: "/"})
 }
 
-// Helper: ID generator
+// Helper: Create a unique 4-letter game ID from random lower-case letters
 func generateGameID() string {
 	rand.Seed(time.Now().UnixNano())
 	letters := []rune("abcdefghijklmnopqrstuvwxyz")
@@ -49,7 +51,7 @@ func generateGameID() string {
 	return string(b)
 }
 
-// Helper: parse int with fallback
+// Helper: Convert string to int, with fallback to default if not valid/positive
 func parseIntWithDefault(s string, def int) int {
 	n, err := strconv.Atoi(s)
 	if err != nil || n <= 0 {
@@ -58,19 +60,23 @@ func parseIntWithDefault(s string, def int) int {
 	return n
 }
 
-// Create Game (vs Human)
+// HTTP POST handler: create new HUMAN-vs-HUMAN game
 func CreateGameHandler(w http.ResponseWriter, r *http.Request) {
+	// Check login & get player name
 	player, ok := getUser(w, r)
 	if !ok {
 		return
 	}
 
-	r.ParseForm()
+	r.ParseForm() // Parse POST form fields
+
+	// Get word length & guesses, falling back to defaults
 	wordLength := parseIntWithDefault(r.FormValue("word_length"), 5)
 	maxGuesses := parseIntWithDefault(r.FormValue("max_guesses"), 7)
 	word := words.GetRandomWord(wordLength)
 	id := generateGameID()
 
+	// Store new game in memory
 	games[id] = &models.Game{
 		ID:                  id,
 		Word:                word,
@@ -82,11 +88,11 @@ func CreateGameHandler(w http.ResponseWriter, r *http.Request) {
 		Status:              "waiting",
 	}
 
-	setGameCookies(w, id, player, "1")
-	http.Redirect(w, r, "/wait", http.StatusSeeOther)
+	setGameCookies(w, id, player, "1")                // Set player 1 role cookies
+	http.Redirect(w, r, "/wait", http.StatusSeeOther) // Go to waiting room
 }
 
-// Join Existing Game
+// HTTP POST handler: join an existing two-player game
 func JoinGameHandler(w http.ResponseWriter, r *http.Request) {
 	player, ok := getUser(w, r)
 	if !ok {
@@ -96,9 +102,8 @@ func JoinGameHandler(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
 	gameID := r.FormValue("game_id")
 	game, found := games[gameID]
-
 	if !found {
-		// Game doesn't exist
+		// Set error message and redirect if can't find game
 		http.SetCookie(w, &http.Cookie{
 			Name:  "error",
 			Value: url.QueryEscape("Game not found."),
@@ -109,7 +114,7 @@ func JoinGameHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if game.Player2 != "" {
-		// Game is full
+		// Already has two players
 		http.SetCookie(w, &http.Cookie{
 			Name:  "error",
 			Value: url.QueryEscape("Game already has two players."),
@@ -119,14 +124,14 @@ func JoinGameHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// Success: join the game
+	// Add player2 and start game
 	game.Player2 = player
 	game.Status = "in_progress"
 	setGameCookies(w, gameID, player, "2")
 	http.Redirect(w, r, "/wait", http.StatusSeeOther)
 }
 
-// Create Game vs AI
+// HTTP POST handler: create new game against AI (always instant start)
 func CreateAIHandler(w http.ResponseWriter, r *http.Request) {
 	player, ok := getUser(w, r)
 	if !ok {
@@ -139,6 +144,7 @@ func CreateAIHandler(w http.ResponseWriter, r *http.Request) {
 	word := words.GetRandomWord(wordLength)
 	id := generateGameID()
 
+	// Note Player2 is "Computer" and status is "in_progress" immediately
 	games[id] = &models.Game{
 		ID:                  id,
 		Word:                word,
@@ -155,45 +161,45 @@ func CreateAIHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/gameplay", http.StatusSeeOther)
 }
 
-// Wait Room Page
+// Wait room handler: shows "waiting for player 2", or advances if ready
 func WaitRoomHandler(w http.ResponseWriter, r *http.Request) {
 	gameIDCookie, err := r.Cookie("game_id")
 	if err != nil {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-
 	game, ok := games[gameIDCookie.Value]
 	if !ok {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-
 	if game.Player2 == "" && game.Player2 != "Computer" {
+		// Still waiting for second player
 		data := map[string]interface{}{
 			"GameID":  game.ID,
 			"Player1": game.Player1,
 		}
 		utils.RenderPage(w, r, "waiting.html", data)
 	} else {
+		// Ready to play
 		http.Redirect(w, r, "/gameplay", http.StatusSeeOther)
 	}
 }
 
-// Game View Handler (GET)
+// Render the main game view (game board, etc)
 func GameplayHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("game_id")
 	if err != nil || cookie.Value == "" {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
-
 	game, ok := games[cookie.Value]
 	if !ok {
 		http.Redirect(w, r, "/", http.StatusSeeOther)
 		return
 	}
 
+	// Build data for template: game state, guess history, winner, etc.
 	data := map[string]interface{}{
 		"Game":         game,
 		"Word":         game.Word,
@@ -208,41 +214,32 @@ func GameplayHandler(w http.ResponseWriter, r *http.Request) {
 		"HintText":     game.HintText,
 	}
 
+	// Get and display any error messages, then clear the cookie
 	if errCookie, err := r.Cookie("error"); err == nil {
 		if msg, decodeErr := url.QueryUnescape(errCookie.Value); decodeErr == nil {
 			data["Error"] = msg
 		}
-
-		// Clear the error message after displaying it
 		http.SetCookie(w, &http.Cookie{
-			Name:   "error",
-			Value:  "",
-			Path:   "/",
-			MaxAge: -1,
+			Name: "error", Value: "", Path: "/", MaxAge: -1,
 		})
 	}
 
 	utils.RenderPage(w, r, "gameplay.html", data)
 }
 
+// Return true if the current player (from cookie) is the one whose turn it is
 func isPlayerTurn(r *http.Request, game *models.Game) bool {
-	// Get the current player name from cookie
 	cookie, err := r.Cookie("player_name")
 	if err != nil {
 		return false
 	}
 	player := cookie.Value
-
-	// Determine which player it is and compare with whose turn it is
-	if game.PlayerTurn == 1 && game.Player1 == player {
-		return true
-	}
-	if game.PlayerTurn == 2 && game.Player2 == player {
-		return true
-	}
-	return false
+	// Compare which player turn we are at
+	return (game.PlayerTurn == 1 && game.Player1 == player) ||
+		(game.PlayerTurn == 2 && game.Player2 == player)
 }
 
+// Retrieve list of correct guessed letters, sorted alphabetically, as a string with commas
 func getCorrectLetters(game *models.Game) string {
 	letters := []string{}
 	for letter := range game.GuessedLetters {
@@ -254,6 +251,7 @@ func getCorrectLetters(game *models.Game) string {
 	return strings.Join(letters, ", ")
 }
 
+// Retrieve list of wrong guessed letters, sorted alphabetically, as a string
 func getWrongLetters(game *models.Game) string {
 	letters := []string{}
 	for letter := range game.GuessedLetters {
@@ -265,15 +263,14 @@ func getWrongLetters(game *models.Game) string {
 	return strings.Join(letters, ", ")
 }
 
+// (Deprecating) HTTP handler: disallow traditional guessing, as guessing should be real-time via WebSockets!
 func GuessHandler(w http.ResponseWriter, r *http.Request) {
-	// Optional: redirect or 405 method not allowed, because guessing will be over WS now
 	http.Error(w, "Use WebSocket to guess", http.StatusMethodNotAllowed)
 }
 
-// Build Game State for Template
+// Helper: build the per-game, per player template state as a map
 func buildGameState(game *models.Game, role string) map[string]interface{} {
-	correct := []string{}
-	wrong := []string{}
+	correct, wrong := []string{}, []string{}
 	for l := range game.GuessedLetters {
 		if strings.Contains(game.Word, l) {
 			correct = append(correct, l)
@@ -283,7 +280,6 @@ func buildGameState(game *models.Game, role string) map[string]interface{} {
 	}
 	sort.Strings(correct)
 	sort.Strings(wrong)
-
 	return map[string]interface{}{
 		"DisplayWord":  game.DisplayWord,
 		"Remaining":    game.MaxIncorrectGuesses - game.IncorrectGuesses,
@@ -296,63 +292,54 @@ func buildGameState(game *models.Game, role string) map[string]interface{} {
 	}
 }
 
-// Replace with your dynamic game UI rendering logic
-func generatePartialGameHTML(game *models.Game, role string) string {
-	// Example: HTML snippet with word and remaining guesses
-	remaining := game.MaxIncorrectGuesses - game.IncorrectGuesses
-	return fmt.Sprintf(`
-		<h3>Word: %s</h3>
-		<p>Remaining guesses: %d</p>
-	`, game.DisplayWord, remaining)
-}
-
+// Update (or insert) leaderboard for player; increments win, tracks best score for user (fewest incorrect guesses)
 func updateLeaderboard(winner string, incorrectGuesses int) {
 	var userID int
 	err := db.DB.QueryRow("SELECT id FROM users WHERE username = ?", winner).Scan(&userID)
 	if err != nil {
+		// User not found, log but continue
 		fmt.Println("Leaderboard update error: could not find user", winner)
 		return
 	}
-
+	// Uses upsert: on conflict, increase wins, update best_score if improved
 	_, err = db.DB.Exec(`
-		INSERT INTO leaderboard (player, wins, best_score)
-		VALUES (?, 1, ?)
-		ON CONFLICT(player) DO UPDATE SET
-			wins = wins + 1,
-			best_score = CASE WHEN best_score IS NULL OR ? < best_score THEN ? ELSE best_score END
-	`, userID, incorrectGuesses, incorrectGuesses, incorrectGuesses)
+        INSERT INTO leaderboard (player, wins, best_score)
+        VALUES (?, 1, ?)
+        ON CONFLICT(player) DO UPDATE SET
+            wins = wins + 1,
+            best_score = CASE WHEN best_score IS NULL OR ? < best_score THEN ? ELSE best_score END
+    `, userID, incorrectGuesses, incorrectGuesses, incorrectGuesses)
 	if err != nil {
 		fmt.Println("Leaderboard update error:", err)
 	}
 }
 
+// Give a hint to the current player, if none used yet, using logic.GetHint
 func HintHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("game_id")
 	if err != nil || cookie.Value == "" {
 		http.Error(w, "Missing game ID", http.StatusBadRequest)
 		return
 	}
-
 	game, ok := games[cookie.Value]
 	if !ok {
 		http.Error(w, "Game not found", http.StatusNotFound)
 		return
 	}
-
 	if game.HasUsedHint {
+		// Already has hint, just return it again
 		fmt.Fprint(w, game.HintText)
 		return
 	}
-
 	hint, err := logic.GetHint(game)
 	if err != nil {
 		http.Error(w, "Hint unavailable", http.StatusInternalServerError)
 		return
 	}
-
 	fmt.Fprint(w, hint)
 }
 
+// State endpoint: Used for HTMX/live updates, returns slice of game state for the current session
 func StateHandler(w http.ResponseWriter, r *http.Request) {
 	cookie, err := r.Cookie("game_id")
 	if err != nil || cookie.Value == "" {
@@ -365,13 +352,13 @@ func StateHandler(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "Game not found", http.StatusNotFound)
 		return
 	}
-
 	if game.Player2 != "" && game.Status == "in_progress" {
+		// If both players ready and in progress, tell HTMX client to redirect to main gameplay
 		w.Header().Set("HX-Redirect", "/gameplay")
 		return
 	}
 
-	// Build correct and wrong letters
+	// Gather correct and wrong guesses
 	var correct, wrong []string
 	for letter, guessed := range game.GuessedLetters {
 		if guessed {
@@ -383,16 +370,15 @@ func StateHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// Collect player role and turn info
+	// Get player role from cookie if present
 	role := ""
 	roleCookie, err := r.Cookie("role")
 	if err == nil {
 		role = roleCookie.Value
 	}
-
 	isPlayerTurn := role == fmt.Sprintf("%d", game.PlayerTurn)
 
-	// Build state data
+	// Build state dictionary for template/partial rendering
 	data := map[string]interface{}{
 		"GameID":       game.ID,
 		"Player1":      game.Player1,
@@ -410,9 +396,8 @@ func StateHandler(w http.ResponseWriter, r *http.Request) {
 		"IsPlayerTurn": isPlayerTurn,
 	}
 
-	// If game is waiting, render waiting page with polling
+	// If still waiting, render waiting or, if player2 just joined, send client redirect to /gameplay
 	if game.Status == "waiting" {
-		// If Player 2 has joined, inject redirect script for HTMX client
 		if game.Player2 != "" {
 			fmt.Fprint(w, `<script>window.location.replace("/gameplay");</script>`)
 		} else {
@@ -421,6 +406,6 @@ func StateHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// If game is in progress or finished, render gameplay
+	// Game is in progress or finished; render/update gameplay partial
 	utils.RenderPartial(w, r, "gameplay.html", data)
 }
