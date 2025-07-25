@@ -13,7 +13,11 @@
     <input name="username" type="text" required>
 
     <label>Password:</label>
-    <input name="password" type="password" required>
+    <input id="password" name="password" type="password" required>
+
+    <label style="margin-top: 0.5em;">
+      <input type="checkbox" onclick="togglePassword()"> Show Password
+    </label>
 
     <button type="submit">Register</button>
   </form>
@@ -23,4 +27,11 @@
     <a href="/">Back to Home</a>
   </div>
 </div>
+
+<script>
+  function togglePassword() {
+    const pwd = document.getElementById("password");
+    pwd.type = pwd.type === "password" ? "text" : "password";
+  }
+</script>
 {{end}}
