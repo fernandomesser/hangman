@@ -3,7 +3,7 @@
 A full-stack, Hangman game supporting multiplayer and AI gameplay. Features real-time play via WebSockets, persistent accounts and leaderboard (SQLite), and a clean, responsive UI built with Go, HTMX, and CSS.
 
 ## To play the game just visit:  
-https://hangman-challenge.up.railway.app/  
+https://hangman-challenge.up.railway.app/  //outdated
 
 
 ## Local Setup:
